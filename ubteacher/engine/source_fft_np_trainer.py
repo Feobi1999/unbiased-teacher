@@ -475,25 +475,7 @@ class UBTeacherTrainer(DefaultTrainer):
 
             # input both strong and weak supervised data into model
             label_data_q.extend(label_data_k)
-
-            #consist
-            if self.cfg.ADDITIONAL_BRANCH == 1:
-                if self.cfg.CONSIST_MODE=="SRC_PROPOSAL":
-                    record_dict, _, _, _ = self.model(label_data_q, branch="consist_src")
-                elif self.cfg.CONSIST_MODE=="FFT_PROPOSAL":
-                    record_dict, _, _, _ = self.model(label_data_q, branch="consist_fft")
-                elif self.cfg.CONSIST_MODE=="ALL":
-                    record_dict, _, _, _ = self.model(label_data_q, branch="consist_all")
-
-            #contrast supervised
-            elif self.cfg.ADDITIONAL_BRANCH == 2:
-
-                record_dict, _, _, _ = self.model(label_data_q, branch="contrast_supervised")
-
-            #supervsied
-            else:
-                record_dict, _, _, _ = self.model(label_data_q, branch="supervised")
-
+            record_dict, _, _, _ = self.model(label_data_q, branch="supervised")
 
             # weight losses
             loss_dict = {}
@@ -508,7 +490,7 @@ class UBTeacherTrainer(DefaultTrainer):
                 self._update_teacher_model(keep_rate=0.00)
 
             elif (
-                self.iter - self.cfg.SEMISUPNET.BURN_UP_STEP
+                    self.iter - self.cfg.SEMISUPNET.BURN_UP_STEP
             ) % self.cfg.SEMISUPNET.TEACHER_UPDATE_ITER == 0:
                 self._update_teacher_model(keep_rate=self.cfg.SEMISUPNET.EMA_KEEP_RATE)
 
@@ -553,66 +535,32 @@ class UBTeacherTrainer(DefaultTrainer):
                 unlabel_data_k, joint_proposal_dict["proposals_pseudo_roih"]
             )
 
-            import pdb
-            # pdb.set_trace()
+
 
             all_label_data = label_data_q + label_data_k
             all_unlabel_data = unlabel_data_q
 
-            if self.cfg.ADDITIONAL_BRANCH == 1:
-                if self.cfg.CONSIST_MODE == "SRC_PROPOSAL":
-                    record_all_label_data, _, _, _ = self.model(all_label_data, branch="consist_src")
-                elif self.cfg.CONSIST_MODE=="FFT_PROPOSAL":
-                    record_all_label_data, _, _, _ = self.model(all_label_data, branch="consist_fft")
-                elif self.cfg.CONSIST_MODE=="ALL":
-                    record_all_label_data, _, _, _ = self.model(all_label_data, branch="consist_all")
 
-            elif self.cfg.ADDITIONAL_BRANCH == 2:
-                #src&fft
-
-                record_all_label_data, _, _, _ = self.model(all_label_data, branch="contrast_supervised")
-
-            elif self.cfg.ADDITIONAL_BRANCH == 3:
-                #src & tgt
-                # data_to_contrast = src_label_data_k + unlabel_data_k
-                record_all_label_data, _, _, _ = self.model(
-                    all_label_data, branch="supervised"
-                )
-
-                data_to_contrast = label_data_q + unlabel_data_q
-                record_contrast, _, _, _ = self.model(data_to_contrast, branch="contrast_tgt_src")
-                record_dict.update(record_contrast)
-            elif self.cfg.ADDITIONAL_BRANCH == 4:
-                #fft & tgt
-                data_to_contrast = label_data_k + unlabel_data_q
-
-                record_contrast, _, _, _ = self.model(data_to_contrast, branch="contrast_tgt_fft")
-                record_dict.update(record_contrast)
-            else:
-                record_all_label_data, _, _, _ = self.model(
-                    all_label_data, branch="supervised"
-                )
-
-            need_supervised=0
-            if self.cfg.ADDITIONAL_BRANCH==3 or self.cfg.ADDITIONAL_BRANCH==4:
-                need_supervised=1
-
-            if need_supervised:
-                record_all_label_data, _, _, _ = self.model(
-                    all_label_data, branch="supervised"
-                )
-
+            record_all_label_data, _, _, _ = self.model(
+                all_label_data, branch="supervised"
+            )
             record_dict.update(record_all_label_data)
+
+
 
 
             record_all_unlabel_data, _, _, _ = self.model(
                 all_unlabel_data, branch="supervised"
             )
+
             new_record_all_unlabel_data = {}
             for key in record_all_unlabel_data.keys():
                 new_record_all_unlabel_data[key + "_pseudo"] = record_all_unlabel_data[
-                    key
-                ]
+                    key]
+
+
+
+
             record_dict.update(new_record_all_unlabel_data)
 
             # weight losses
@@ -624,7 +572,7 @@ class UBTeacherTrainer(DefaultTrainer):
                         loss_dict[key] = record_dict[key] * 0
                     elif key[-6:] == "pseudo":  # unsupervised loss
                         loss_dict[key] = (
-                            record_dict[key] * self.cfg.SEMISUPNET.UNSUP_LOSS_WEIGHT
+                                record_dict[key] * self.cfg.SEMISUPNET.UNSUP_LOSS_WEIGHT
                         )
                     else:  # supervised loss
                         loss_dict[key] = record_dict[key] * 1
@@ -638,6 +586,7 @@ class UBTeacherTrainer(DefaultTrainer):
         self.optimizer.zero_grad()
         losses.backward()
         self.optimizer.step()
+
 
     def _write_metrics(self, metrics_dict: dict):
         metrics_dict = {

@@ -51,3 +51,4 @@ def add_ubteacher_config(cfg):
     _C.DA_FPN_FEATURE = ["p2", "p3", "p4", "p5"]
     _C.CONSIST_MODE = ""
     _C.ADDITIONAL_BRANCH = 0
+    _C.CONSIST_ON = False

@@ -12,7 +12,7 @@ IMG_MEAN = torch.reshape( torch.from_numpy(IMG_MEAN), (1,3,1,1)  )
 @META_ARCH_REGISTRY.register()
 class TwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
     def forward(
-        self, batched_inputs, target_batched_inputs=None, branch="supervised", domain_stats=None, given_proposals=None, val_mode=False
+        self, batched_inputs, branch="supervised", given_proposals=None, val_mode=False
     ):
 
 
@@ -46,7 +46,23 @@ class TwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
 
         features = self.backbone(images.tensor)
 
-        if branch == "unsup_data_weak":
+        if branch == "supervised":
+            # Region proposal network
+            proposals_rpn, proposal_losses = self.proposal_generator(
+                images, features, gt_instances
+            )
+
+            # # roi_head lower branch
+            _, detector_losses = self.roi_heads(
+                images, features, proposals_rpn, gt_instances, branch=branch
+            )
+
+            losses = {}
+            losses.update(detector_losses)
+            losses.update(proposal_losses)
+            return losses, [], [], None
+
+        elif branch == "unsup_data_weak":
             # Region proposal network
             proposals_rpn, _ = self.proposal_generator(
                 images, features, None, compute_loss=False
@@ -79,41 +95,6 @@ class TwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
                 gt_instances,
                 branch=branch,
                 compute_val_loss=True,
-            )
-
-            losses = {}
-            losses.update(detector_losses)
-            losses.update(proposal_losses)
-            return losses, [], [], None
-
-
-        elif "contrast_tgt" in branch:
-            proposals_rpn, proposal_losses = self.proposal_generator(
-                images, features, gt_instances
-            )
-
-            import pdb
-            # pdb.set_trace()
-            # # roi_head lower branch
-
-            _, contrast_loss = self.roi_heads(images, features, proposals_rpn, gt_instances, branch=branch)
-
-            losses = {}
-            # losses.update(detector_losses)
-            losses.update(contrast_loss)
-            return losses, [], [], None
-
-        else:
-            # Region proposal network
-            proposals_rpn, proposal_losses = self.proposal_generator(
-                images, features, gt_instances
-            )
-
-            import pdb
-            # pdb.set_trace()
-            # # roi_head lower branch
-            _, detector_losses = self.roi_heads(
-                images, features, proposals_rpn, gt_instances, branch=branch
             )
 
             losses = {}
