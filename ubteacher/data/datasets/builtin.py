@@ -6,21 +6,33 @@ from fvcore.common.timer import Timer
 from fvcore.common.file_io import PathManager
 import io
 import logging
+from detectron2.data.datasets import register_coco_instances
 
 logger = logging.getLogger(__name__)
 
 JSON_ANNOTATIONS_DIR = ""
 _SPLITS_COCO_FORMAT = {}
 _SPLITS_COCO_FORMAT["coco"] = {
-    "coco_2017_unlabel": (
-        "coco/unlabeled2017",
-        "coco/annotations/image_info_unlabeled2017.json",
+    "foggy_coco_2017_unlabel": (
+        "cityscapes/leftImg8bit_foggy/train",
+        "cityscapes/annotations/cityscapes_foggy_train_cocostyle.json",
     ),
-    "coco_2017_for_voc20": (
-        "coco",
-        "coco/annotations/google/instances_unlabeledtrainval20class.json",
+    "cityscape_coco_unlabel": (
+        "cityscapes/leftImg8bit/train",
+        "Cityscapes/annotations/cityscapes_train_cocostyle.json",
+    ),
+
+    "cityscape_caronly_unlabel": (
+        "cityscapes/leftImg8bit/train",
+        "cityscapes/annotations/cityscapes_train_caronly_cocostyle.json",
     ),
 }
+
+
+
+
+
+
 
 
 def register_coco_unlabel(root):
@@ -63,6 +75,7 @@ def register_coco_unlabel_instances(name, metadata, json_file, image_root):
     MetadataCatalog.get(name).set(
         json_file=json_file, image_root=image_root, evaluator_type="coco", **metadata
     )
+    # MetadataCatalog.get(name).thing_classes = ["1", "2" ,"3", "4","5","6","7","8"]
 
 
 def load_coco_unlabel_json(
@@ -101,5 +114,43 @@ def load_coco_unlabel_json(
     return dataset_dicts
 
 
-_root = os.getenv("DETECTRON2_DATASETS", "datasets")
+# _root = os.getenv("DETECTRON2_DATASETS", "datasets")
+_root='/mnt/lustre/hemengzhe/datasets'
 register_coco_unlabel(_root)
+register_coco_instances('cityscape_coco_train', {},
+                        "/mnt/lustre/hemengzhe/datasets/cityscapes/annotations/cityscapes_train_cocostyle.json",
+                       '/mnt/lustre/hemengzhe/datasets/cityscapes/leftImg8bit/train')
+register_coco_instances('cityscape_coco_test', {},
+                        "/mnt/lustre/hemengzhe/datasets/cityscapes/annotations/cityscapes_val_cocostyle.json",
+                       '/mnt/lustre/hemengzhe/datasets/cityscapes/leftImg8bit/val')
+
+register_coco_instances('cityscape_car_only_val', {},
+                        '/mnt/lustre/hemengzhe/datasets/cityscapes/annotations/cityscapes_val_caronly_cocostyle.json',
+                       '/mnt/lustre/hemengzhe/datasets/cityscapes/leftImg8bit/val/')
+
+register_coco_instances('cityscape_car_only_transfer_val', {},
+                        '/media/sda2/mzhe/datasets/Cityscapes/cocoAnnotations/cityscapes_val_caronly_cocostyle.json',
+                       '/media/sda2/mzhe/datasets/car_trans_image')
+
+register_coco_instances('foggy_cityscape_coco_val', {},
+                        '/mnt/lustre/hemengzhe/datasets/cityscapes/annotations/cityscapes_foggy_val_cocostyle.json',
+                       '/mnt/lustre/hemengzhe/datasets/cityscapes/leftImg8bit_foggy/val')
+
+register_coco_instances('foggy_trans_cityscape_coco_val', {},
+                        '/media/sda2/mzhe/datasets/Cityscapes/cocoAnnotations/cityscapes_foggy_val_cocostyle.json',
+                       '/media/sda2/mzhe/datasets/trans_image')
+# register_coco_instances('cityscape_coco_val', {},
+#                         '/media/sda2/mzhe/datasets/Cityscapes/cocoAnnotations/cityscapes_val_cocostyle.json',
+#                        '/media/sda2/mzhe/datasets/Cityscapes/val20177')
+
+register_coco_instances('sim10k_coco_train', {},
+                        '/mnt/lustre/hemengzhe/datasets/sim10k/car_instances.json',
+                       '/mnt/lustre/hemengzhe/datasets/sim10k/JPEGImages')
+
+register_coco_instances('bdd100k_coco_train', {},
+                        '/media/sda2/mzhe/BDD100K/det_v2_train_release_cocostyle_daytime.json',
+                       '/media/sda2/mzhe/BDD100K/train')
+
+register_coco_instances('bdd100k_coco_val', {},
+                        '/media/sda2/mzhe/BDD100K/det_v2_val_release_cocostyle_daytime.json',
+                       '/media/sda2/mzhe/BDD100K/val')

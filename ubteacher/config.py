@@ -16,7 +16,8 @@ def add_ubteacher_config(cfg):
     _C.SOLVER.IMG_PER_BATCH_LABEL = 1
     _C.SOLVER.IMG_PER_BATCH_UNLABEL = 1
     _C.SOLVER.FACTOR_LIST = (1,)
-
+    _C.SOLVER.IMS_PER_BATCH=8
+    _C.SOLVER.SUB_LR  = None
     _C.DATASETS.TRAIN_LABEL = ("coco_2017_train",)
     _C.DATASETS.TRAIN_UNLABEL = ("coco_2017_train",)
     _C.DATASETS.CROSS_DATASET = False
@@ -46,3 +47,7 @@ def add_ubteacher_config(cfg):
 
     _C.EMAMODEL = CN()
     _C.EMAMODEL.SUP_CONSIST = True
+    _C.DA_CASE= None
+    _C.DA_FPN_FEATURE = ["p2", "p3", "p4", "p5"]
+    _C.CONSIST_MODE = ""
+    _C.ADDITIONAL_BRANCH = 0

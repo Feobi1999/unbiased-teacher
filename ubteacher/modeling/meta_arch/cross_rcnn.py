@@ -4,15 +4,13 @@ from detectron2.modeling.meta_arch.rcnn import GeneralizedRCNN
 from utils import FDA_source_to_target
 import torch
 import numpy as np
-from detectron2.modeling.postprocessing import detector_postprocess
 IMG_MEAN = np.array((104.00698793, 116.66876762, 122.67891434), dtype=np.float32)
 IMG_MEAN = torch.reshape( torch.from_numpy(IMG_MEAN), (1,3,1,1)  )
-# from ubteacher.modeling.roi_heads.roi_heads import
 
 @META_ARCH_REGISTRY.register()
-class TwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
+class CrossTwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
     def forward(
-        self, batched_inputs, target_batched_inputs=None, branch="supervised", domain_stats=None, given_proposals=None, val_mode=False
+        self, batched_inputs, branch="supervised",  given_proposals=None, val_mode=False
     ):
 
 
@@ -22,31 +20,63 @@ class TwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
         batched_inputs[0] dict keys() ['file_name', 'height', 'width', 'image_id', 'image'])
         '''
 
-        #for fft try
 
 
         if (not self.training) and (not val_mode):
 
-            import pdb
-            # pdb.set_trace()
+
             return self.inference(batched_inputs)
 
 
 
 
         images = self.preprocess_image(batched_inputs)
-        import pdb
-        # pdb.set_trace()
+
         if "instances" in batched_inputs[0]:
             gt_instances = [x["instances"].to(self.device) for x in batched_inputs]
-
-
         else:
             gt_instances = None
 
         features = self.backbone(images.tensor)
 
-        if branch == "unsup_data_weak":
+        if branch == "supervised":
+            # Region proposal network
+            proposals_rpn, proposal_losses = self.proposal_generator(
+                images, features, gt_instances
+            )
+
+            # # roi_head lower branch
+            _, detector_losses = self.roi_heads(
+                images, features, proposals_rpn, gt_instances, branch=branch
+            )
+
+            losses = {}
+            losses.update(detector_losses)
+            losses.update(proposal_losses)
+            return losses, [], [], None
+
+        if branch == "supervised_cross":
+            # Region proposal network
+            proposals_rpn, proposal_losses = self.proposal_generator(
+                images, features, gt_instances
+            )
+
+            # # roi_head lower branch
+            _, detector_losses = self.roi_heads(
+                images, features, proposals_rpn, gt_instances, branch=branch
+            )
+
+            losses = {}
+            losses.update(detector_losses)
+            losses.update(proposal_losses)
+            return losses, [], [], None
+
+
+
+
+
+
+        elif branch == "unsup_data_weak":
             # Region proposal network
             proposals_rpn, _ = self.proposal_generator(
                 images, features, None, compute_loss=False
@@ -86,37 +116,29 @@ class TwoStagePseudoLabGeneralizedRCNN(GeneralizedRCNN):
             losses.update(proposal_losses)
             return losses, [], [], None
 
+    # def inference(self, batched_inputs, detected_instances=None, do_postprocess=True):
+    #     assert not self.training
 
-        elif "contrast_tgt" in branch:
-            proposals_rpn, proposal_losses = self.proposal_generator(
-                images, features, gt_instances
-            )
+    #     images = self.preprocess_image(batched_inputs)
+    #     features = self.backbone(images.tensor)
 
-            import pdb
-            # pdb.set_trace()
-            # # roi_head lower branch
+    #     if detected_instances is None:
+    #         if self.proposal_generator:
+    #             proposals, _ = self.proposal_generator(images, features, None)
+    #         else:
+    #             assert "proposals" in batched_inputs[0]
+    #             proposals = [x["proposals"].to(self.device) for x in batched_inputs]
 
-            _, contrast_loss = self.roi_heads(images, features, proposals_rpn, gt_instances, branch=branch)
+    #         results, _ = self.roi_heads(images, features, proposals, None)
+    #     else:
+    #         detected_instances = [x.to(self.device) for x in detected_instances]
+    #         results = self.roi_heads.forward_with_given_boxes(
+    #             features, detected_instances
+    #         )
 
-            losses = {}
-            # losses.update(detector_losses)
-            losses.update(contrast_loss)
-            return losses, [], [], None
-
-        else:
-            # Region proposal network
-            proposals_rpn, proposal_losses = self.proposal_generator(
-                images, features, gt_instances
-            )
-
-            import pdb
-            # pdb.set_trace()
-            # # roi_head lower branch
-            _, detector_losses = self.roi_heads(
-                images, features, proposals_rpn, gt_instances, branch=branch
-            )
-
-            losses = {}
-            losses.update(detector_losses)
-            losses.update(proposal_losses)
-            return losses, [], [], None
+    #     if do_postprocess:
+    #         return GeneralizedRCNN._postprocess(
+    #             results, batched_inputs, images.image_sizes
+    #         )
+    #     else:
+    #         return results

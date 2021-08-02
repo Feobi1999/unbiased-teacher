@@ -7,10 +7,10 @@ from detectron2.config import get_cfg
 from detectron2.engine import default_argument_parser, default_setup, launch
 
 from ubteacher import add_ubteacher_config
-from ubteacher.engine.source_fft_trainer import UBTeacherTrainer, BaselineTrainer
+from ubteacher.engine.source_fft_trainer_cross import UBTeacherTrainer, BaselineTrainer
 
 # hacky way to register
-from ubteacher.modeling.meta_arch.rcnn import TwoStagePseudoLabGeneralizedRCNN
+from ubteacher.modeling.meta_arch.cross_rcnn import CrossTwoStagePseudoLabGeneralizedRCNN
 from ubteacher.modeling.proposal_generator.rpn import PseudoLabRPN
 from ubteacher.modeling.roi_heads.roi_heads import StandardROIHeadsPseudoLab
 import ubteacher.data.datasets.builtin

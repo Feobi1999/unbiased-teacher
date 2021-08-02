@@ -40,11 +40,14 @@ class WarmupTwoStageMultiStepLR(torch.optim.lr_scheduler._LRScheduler):
             self.warmup_method, self.last_epoch, self.warmup_iters, self.warmup_factor
         )
 
+        # import pdb
+        # pdb.set_trace()
         return [
             base_lr
             * warmup_factor
             * self.factor_list[bisect_right(self.milestones, self.last_epoch)]
             for base_lr in self.base_lrs
+
         ]
 
     def _compute_values(self) -> List[float]:

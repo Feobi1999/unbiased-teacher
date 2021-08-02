@@ -7,7 +7,7 @@ from detectron2.config import get_cfg
 from detectron2.engine import default_argument_parser, default_setup, launch
 
 from ubteacher import add_ubteacher_config
-from ubteacher.engine.source_fft_trainer import UBTeacherTrainer, BaselineTrainer
+from ubteacher.engine.original_trainer import UBTeacherTrainer, BaselineTrainer
 
 # hacky way to register
 from ubteacher.modeling.meta_arch.rcnn import TwoStagePseudoLabGeneralizedRCNN
@@ -41,24 +41,18 @@ def main(args):
         raise ValueError("Trainer Name is not found.")
 
     if args.eval_only:
-
         if cfg.SEMISUPNET.Trainer == "ubteacher":
             model = Trainer.build_model(cfg)
             model_teacher = Trainer.build_model(cfg)
             ensem_ts_model = EnsembleTSModel(model_teacher, model)
-
 
             DetectionCheckpointer(
                 ensem_ts_model, save_dir=cfg.OUTPUT_DIR
             ).resume_or_load(cfg.MODEL.WEIGHTS, resume=args.resume)
             res = Trainer.test(cfg, ensem_ts_model.modelTeacher)
 
-
-
-
         else:
             model = Trainer.build_model(cfg)
-
             DetectionCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
                 cfg.MODEL.WEIGHTS, resume=args.resume
             )
